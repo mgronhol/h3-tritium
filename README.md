@@ -99,7 +99,8 @@ Filters a queryset with given (key, value, operator) configuration.
 Currently supported operators:
 
 ``
-  = node's property (indexed by key) must match the given value.
+  =   node's property (indexed by key) must match the given value.
+  !=  node's property (indexed by key) must not match the given value.
 ``
 
 `FIND resultset key value operator`
