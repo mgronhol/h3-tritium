@@ -26,6 +26,7 @@ import collections
 
 import libs.RedisProtocol as RedisProtocol
 from libs.Hawthorn import (Edge, Node, Graph, QueryEngine)
+import libs.Storage as Storage
 
 def parse_int( value ):
 	try:
@@ -42,13 +43,21 @@ def parse_int( value ):
 	
 
 class Hawthorn( object ):
-	def __init__( self ):
+	def __init__( self, storage ):
 		self.graphs = {}
 		for i in range( 16 ):
 			self.graphs[i] = Graph()
 		
 		self.queries = {}
 		self.next_query_id = 1
+		
+		self.storage = storage
+		
+		self.storage.suppress( True )
+		self.storage.load( self )
+		self.storage.suppress( False )
+		
+		
 	
 	def start_query( self, db_id ):
 		qid = self.next_query_id
@@ -83,6 +92,7 @@ class Hawthorn( object ):
 					return (False, "Invalid node id (%s)." % params[0] )
 				
 				query.graph.create( node_id )
+				self.storage.save( op, params )
 				return (True, "OK")
 				
 				
@@ -92,6 +102,7 @@ class Hawthorn( object ):
 				if not node_id:
 					return (False, "Invalid node id (%s)." % params[0] )
 				
+				self.storage.save( op, params )
 				return query.graph.remove_node( node_id )
 		
 		if op in ["SET", "UNSET", "CONNECT", "DISCONNECT"]:
@@ -108,6 +119,7 @@ class Hawthorn( object ):
 				key = params[1]
 				value = params[2]
 				
+				self.storage.save( op, params )
 				return query.graph.set_property( node_id, key, value )
 				
 				
@@ -120,6 +132,7 @@ class Hawthorn( object ):
 				if not node_id:
 					return (False, "Invalid node id (%s)." % params[0] )
 				
+				self.storage.save( op, params )
 				return query.graph.remove_property( node_id, params[1] )
 
 			elif op == 'CONNECT':
@@ -138,6 +151,7 @@ class Hawthorn( object ):
 				if not target:
 					return (False, "Invalid target id (%s)." % params[1] )
 				
+				self.storage.save( op, params )
 				return query.graph.connect( source, target, edge_type, value )
 			
 				
@@ -157,6 +171,7 @@ class Hawthorn( object ):
 				if not target:
 					return (False, "Invalid target id (%s)." % params[1] )
 				
+				self.storage.save( op, params )
 				return query.graph.disconnect( source, target, edge_type )
 			
 		
@@ -352,5 +367,8 @@ class Hawthorn( object ):
 		#server.kill()
 
 
-hawt = Hawthorn()
+
+appendlog = Storage.AppendLogStorage( "append.log" )
+
+hawt = Hawthorn( appendlog )
 hawt.run()

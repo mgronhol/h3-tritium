@@ -17,7 +17,7 @@
 
 import socket, sys
 
-from RedisProtocol import RedisProtocol
+from libs.RedisProtocol import RedisProtocol
 
 conn = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 

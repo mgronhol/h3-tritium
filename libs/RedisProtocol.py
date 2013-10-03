@@ -158,28 +158,32 @@ class RedisProtocol(object):
 				
 	
 	def _recv( self ):
-		
-		self.buf += self.conn.recv(1024)
-		print self.buf
+		chunk = self.conn.recv(1024)
+		if len( chunk ) < 1:
+			raise IOError
+		self.buf += chunk
+		#print self.buf
 	
 	def receive(self):
-		while len( self.buf ) < 1:
-			self._recv()
-		
-		if self.buf.startswith( "+" ):
-			return self.recv_string()
+		try:
+			while len( self.buf ) < 1:
+				self._recv()
+			
+			if self.buf.startswith( "+" ):
+				return self.recv_string()
 
-		elif self.buf.startswith( "-" ):
-			return self.recv_error()
-		
-		elif self.buf.startswith( ":" ):
-			return self.recv_integer()
+			elif self.buf.startswith( "-" ):
+				return self.recv_error()
+			
+			elif self.buf.startswith( ":" ):
+				return self.recv_integer()
 
-		elif self.buf.startswith( "$" ):
-			return self.recv_bulk()
+			elif self.buf.startswith( "$" ):
+				return self.recv_bulk()
 
-		elif self.buf.startswith( "*" ):
-			return self.recv_multibulk()
-		
+			elif self.buf.startswith( "*" ):
+				return self.recv_multibulk()
+		except IOError:
+			return False
 
 
