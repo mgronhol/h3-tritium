@@ -29,6 +29,10 @@ from libs.Hawthorn import (Edge, Node, Graph, QueryEngine)
 import libs.Storage as Storage
 
 def parse_int( value ):
+	
+	if isinstance( value, int ):
+		return value
+	
 	try:
 		if value.startswith( "0x" ):
 			node_id = int( value, 16 )
@@ -241,10 +245,10 @@ class Hawthorn( object ):
 				if len( params ) != 4:
 					return (False, "Invalid parameter count (%i), should be %i." % ( len(params), 4 ) )
 				
-				key = params[0]
-				value = params[1]
-				operator = params[2]
-				target = params[3]
+				target = params[0]
+				key = params[1]
+				value = params[2]
+				operator = params[3]
 				
 				return query.find( key, value, operator, target )
 	

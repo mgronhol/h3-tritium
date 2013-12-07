@@ -471,8 +471,13 @@ class QueryEngine( object ):
 		
 		for node_id in self.graph.nodes.keys():
 			status, node = self.graph.get_node( node_id )
-			if predicate( node[key], value):
-				result.append( node_id )
+			if key in node["properties"]:
+				if predicate( node["properties"][key], value):
+					result.append( node_id )
+			else:
+				if key == "id":
+					if predicate( hex(node["id"])[2:], value ):
+						result.append( node_id )
 				
 
 		self.querysets[ target ] = result

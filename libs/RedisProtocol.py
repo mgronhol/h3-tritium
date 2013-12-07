@@ -111,7 +111,7 @@ class RedisProtocol(object):
 		(line, rest) = self.buf.split( "\r\n", 1 )
 		self.buf = rest
 		
-		return line[1:]
+		return line
 	
 	
 	def recv_integer( self ):
