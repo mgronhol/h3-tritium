@@ -21,7 +21,7 @@ import socket
 
 def _encode_as_dict( entries ):
 	out = {}
-	print "entries", entries
+	#print "entries", entries
 	for i in range( 0, len( entries ), 2 ):
 		out[ entries[i] ] = entries[i+1]
 	return out	
@@ -62,7 +62,7 @@ class HawthornClient( object ):
 		self.conn.close()
 	
 	def _parse_result( self, response, encoder = None ):
-		print "DEBUG", response
+		#print "DEBUG", response
 		if isinstance( response, str ) and response.startswith( "-" ):
 			self._error = response[1:]
 			return False

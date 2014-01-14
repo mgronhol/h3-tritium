@@ -24,9 +24,105 @@ import gevent.socket
 
 import collections
 
+import json
+
 import libs.RedisProtocol as RedisProtocol
 from libs.Hawthorn import (Edge, Node, Graph, QueryEngine)
 import libs.Storage as Storage
+import libs.HawthornProtocol as HawthornProtocol
+
+
+class ReplicatedStorage( Storage.HawthornStorage ):
+	def __init__( self, addrs ):
+	
+		self.addrs = addrs
+		self.conns = []
+		for addr in self.addrs:
+			(host, port) = addr.split(":")
+			port = int(port)
+			self.conns.append( HawthornProtocol.HawthornClient( host, port ) )
+		self._suppress = False
+	
+	def suppress( self, value ):
+		self._suppress = value
+	
+	def load( self, db ):
+		pass
+	
+	def save( self, op, params ):	
+		if self._suppress:
+			return
+		
+		if op == "CREATE":
+			node_id = params[0]
+			for conn in self.conns:
+				conn.create( node_id )
+		
+		elif op == "DELETE":
+			node_id = params[0]
+			for conn in self.conns:
+				conn.delete( node_id )
+		
+		elif op == "CONNECT":
+			source = params[0]
+			target = params[1]
+			edge_type = params[2]
+			weight = params[3]
+			for conn in self.conns:
+				conn.connect( source, target, edge_type, weight )
+		
+		elif op == "DISCONNECT":
+			source = params[0]
+			target = params[1]
+			edge_type = params[2]
+			for conn in self.conns:
+				conn.disconnect( source, target, edge_type )
+		
+		elif op == "SET":
+			node_id = params[0]
+			key = params[1]
+			value = params[2]
+			for conn in self.conns:
+				conn.set( node_id, key, value )
+		
+		elif op == "UNSET":
+			node_id = params[0]
+			key = params[1]
+			for conn in self.conns:
+				conn.unset( node_id, key )
+		
+		
+	
+
+class MultiStorage( Storage.HawthornStorage ):
+	def __init__( self, storages ):
+		self.storages = []
+	
+	def suppress( self, value ):
+		for store in self.storages:
+			store.suppress( value )
+	
+	def load( self, db ):
+		for store in self.storages:
+			store.load( db )
+	
+	def save( self, op, params ):
+		for store in self.storages:
+			store.save( op, params )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def parse_int( value ):
 	
@@ -47,7 +143,7 @@ def parse_int( value ):
 	
 
 class Hawthorn( object ):
-	def __init__( self, storage ):
+	def __init__( self, storage, config ):
 		self.graphs = {}
 		for i in range( 16 ):
 			self.graphs[i] = Graph()
@@ -61,6 +157,7 @@ class Hawthorn( object ):
 		self.storage.load( self )
 		self.storage.suppress( False )
 		
+		self.config = config
 		
 	
 	def start_query( self, db_id ):
@@ -84,7 +181,7 @@ class Hawthorn( object ):
 		op = command[0]
 		params = command[1:]
 		
-		print op, params
+		#print op, params
 		
 		if op in ["CREATE", "DELETE"]:
 			if len( params ) != 1:
@@ -331,7 +428,7 @@ class Hawthorn( object ):
 	def get_handler( self ):
 		def handler( socket, address ):
 			qid = self.start_query( 0 )
-			print "Connection accepted"
+			#print "Connection accepted"
 			conn = RedisProtocol.RedisProtocol( socket )
 			try:
 				while True:
@@ -351,8 +448,9 @@ class Hawthorn( object ):
 					
 					
 			except gevent.socket.error:
-				print sys.exc_info()
-				print "Connection closed"
+				#print sys.exc_info()
+				#print "Connection closed"
+				pass
 				
 			
 			self.end_query( qid )
@@ -362,7 +460,9 @@ class Hawthorn( object ):
 
 
 	def run( self ):
-		server = StreamServer( ('127.0.0.1', 7778), self.get_handler() )
+		#server = StreamServer( ('127.0.0.1', 7778), self.get_handler() )
+		print "Starting H3 Tritium @ %s:%i.." % ( self.config["host"], self.config["port"] )
+		server = StreamServer( (self.config["host"], self.config["port"]), self.get_handler() )
 		try:
 			server.serve_forever()
 		except KeyboardInterrupt:
@@ -372,7 +472,21 @@ class Hawthorn( object ):
 
 
 
-appendlog = Storage.AppendLogStorage( "append.log" )
+config = {}
 
-hawt = Hawthorn( appendlog )
+with open( sys.argv[1], 'r') as handle:
+	config = json.load( handle )
+
+
+
+
+appendlog = Storage.AppendLogStorage( config["database"] )
+
+replicator = ReplicatedStorage( config["replication"]["hosts"] )
+
+
+multistore = MultiStorage([ appendlog, replicator ])
+
+
+hawt = Hawthorn( multistore, config )
 hawt.run()

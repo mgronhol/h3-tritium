@@ -1,0 +1,10 @@
+{
+	"host": "127.0.0.1",
+	"port": 7778,
+	"database": "append.log",
+	
+	"replication":{
+		"hosts":[]
+	}
+
+}
