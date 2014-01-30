@@ -96,7 +96,7 @@ class ReplicatedStorage( Storage.HawthornStorage ):
 
 class MultiStorage( Storage.HawthornStorage ):
 	def __init__( self, storages ):
-		self.storages = []
+		self.storages = storages
 	
 	def suppress( self, value ):
 		for store in self.storages:
@@ -181,7 +181,7 @@ class Hawthorn( object ):
 		op = command[0]
 		params = command[1:]
 		
-		#print op, params
+		print op, params
 		
 		if op in ["CREATE", "DELETE"]:
 			if len( params ) != 1:
@@ -297,7 +297,7 @@ class Hawthorn( object ):
 				
 				return query.fetch( qset )
 
-			if op == 'EDGES':
+			elif op == 'EDGES':
 				if len( params ) != 1:
 					return (False, "Invalid parameter count (%i), should be %i." % ( len(params), 1 ) )
 				
@@ -317,6 +317,14 @@ class Hawthorn( object ):
 					return (status, bedges)
 				
 				return (True, {"forward": fedges, "backward": bedges} )
+			
+			elif op == 'CLEAR':
+				if len( params ) != 1:
+					return (False, "Invalid parameter count (%i), should be %i." % ( len(params), 1 ) )
+				
+				qset = params[0]
+				
+				return query.clear( qset )
 				
 		
 		elif op in ["START", "FIND", "FORWARD", "BACKWARD", "FILTER", "APPEND", "UNION", "INTERSECT", "DIFFERENCE"]:

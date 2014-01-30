@@ -40,7 +40,6 @@ class AppendLogStorage( HawthornStorage ):
 		self._suppress = value
 	
 	def load( self, db ):
-		
 		if not os.path.exists( self.filename ):
 			return
 		
