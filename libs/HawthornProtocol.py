@@ -102,6 +102,10 @@ class HawthornClient( object ):
 		self.redis.send_response( ["FETCH", queryset] )
 		return self._parse_result( self.redis.receive() )
 	
+	def clear( self, queryset ):
+		self.redis.send_response( ["CLEAR", queryset] )
+		return self._parse_result( self.redis.receive() )
+	
 	def connect( self, source, target, edge_type, weight ):
 		self.redis.send_response( ["CONNECT", source, target, edge_type, weight] )
 		return self._parse_result( self.redis.receive(), _encode_as_dict )
